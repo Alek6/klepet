@@ -1,8 +1,19 @@
 function divElementEnostavniTekst(sporocilo) {
-  var jeSmesko = sporocilo.indexOf('http://sandbox.lavbic.net/teaching/OIS/gradivo/') > -1;
-  if (jeSmesko) {
-    sporocilo = sporocilo.replace(/\</g, '&lt;').replace(/\>/g, '&gt;').replace('&lt;img', '<img').replace('png\' /&gt;', 'png\' />');
-    return $('<div style="font-weight: bold"></div>').html(sporocilo);
+  var dodajanjeYouTubePovezav = false;
+  
+  dodajanjeYouTubePovezav |= sporocilo.indexOf('<img') > -1;
+  dodajanjeYouTubePovezav |= sporocilo.indexOf( '<iframe src=\'https://www.youtube.com/embed/') > -1;
+  
+  if (dodajanjeYouTubePovezav) {
+  var formatYouTubeLinka = new RegExp( '&lt;iframe src=\'https://www.youtube.com/embed/','g');
+  
+  sporocilo = sporocilo.replace(/\</g,'&lt;');
+  sporocilo = sporocilo.replace(/\>/g,'&gt;');
+  sporocilo = sporocilo.replace(/&lt;img/g,'<img');
+  sporocilo = sporocilo.replace('png\' /&gt;','png\' />');
+  sporocilo = sporocilo.replace(formatYouTubeLinka,'<iframe src=\'https://www.youtube.com/embed/');
+  sporocilo = sporocilo.replace(/&gt;&lt;\/iframe&gt;/g, '></iframe>');
+  return $('<div style="font-weight: bold"></div>').html(sporocilo);
   } else {
     return $('<div style="font-weight: bold;"></div>').text(sporocilo);
   }
@@ -14,6 +25,7 @@ function divElementHtmlTekst(sporocilo) {
 
 function procesirajVnosUporabnika(klepetApp, socket) {
   var sporocilo = $('#poslji-sporocilo').val();
+  sporocilo = dodajYouTube(sporocilo);
   sporocilo = dodajSmeske(sporocilo);
   var sistemskoSporocilo;
 
@@ -131,3 +143,27 @@ function dodajSmeske(vhodnoBesedilo) {
   }
   return vhodnoBesedilo;
 }
+
+function dodajYouTube( input ){
+  var seznamLinkov = [];
+  var formatYouTubeLinka = new RegExp('\\bhttps://www.youtube.com/watch\\?v=[a-z\\-_0-9]*\\b', 'gi');
+  var pripada = null;
+  var zasebno = vhod.startsWith("/zasebno");
+         
+  if ( zasebno )
+    vhod = input.substr( 0, input.lastIndexOf( '"' ) );
+  while ((pripada = formatYouTubeLinka.exec(input)) !== null){
+    seznamLinkov.push(pripada[0]);
+  }
+  for (var i=0;i<seznamLinkov.length;i++){
+    var video_link = seznamLinkov[ i ].substr( seznamLinkov[ i ].lastIndexOf( '=' ) + 1, 11);
+    input += ' <iframe src=\'https://www.youtube.com/embed/' + video_link
+            + '\' width=\'200\' height=\'150\' style=\'margin-left:20px;'
+            +' display:block\' allowfullscreen></iframe> ';
+  }
+  if (zasebno){
+    input += '"';
+  } 
+  
+  return (input);
+ }
